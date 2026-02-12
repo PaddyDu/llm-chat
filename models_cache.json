@@ -1,0 +1,16 @@
+{
+  "models": [
+    "claude-4-5-sonnet-search",
+    "claude-4-5-sonnet-thinking-reasoning",
+    "gemini-3-0-pro-reasoning",
+    "gpt-5-2-search",
+    "gpt-5-2-thinking-reasoning",
+    "grok-4-1-reasoning-reasoning",
+    "grok-4-1-search",
+    "kimi-k2-thinking-reasoning",
+    "perplexity-deepsearch",
+    "perplexity-reasoning",
+    "perplexity-search",
+    "sonar-search"
+  ]
+}
