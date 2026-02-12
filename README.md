@@ -1,21 +1,20 @@
-[English](#comfyui-unified-llm-chat-node) | [中文](#comfyui-统一-llm-聊天节点)
+[English](#comfyui-llm-chat-node) | [中文](#comfyui-llm-聊天节点)
 
-# ComfyUI Unified LLM Chat Node
+# ComfyUI LLM Chat Node
 
-This custom node for ComfyUI provides a single, powerful `LLM Chat` node for interacting with multiple Large Language Models (LLMs), including any OpenAI-compatible API and local Ollama instances. It supports optional image inputs, retry logic, and a smart fallback mode.
+This custom node provides a single `LLM Chat` node for any OpenAI-compatible API endpoint. It includes model list caching, optional image input for vision models, retries with fail-word filtering, and deterministic or randomized seeds.
 
 ## Features
 
-- **Unified Node**: One node to manage connections to both OpenAI and Ollama.
-- **Three Operational Modes**:
-    - **OpenAI**: Connects to any OpenAI-compatible API (defaults to OpenRouter).
-    - **Ollama**: Connects to a local Ollama instance.
-    - **Smart**: Tries OpenAI first. If it fails after all retries, it automatically falls back to Ollama, ensuring your workflow continues.
-- **Multiline Inputs**: System and user prompts support multiline text for easier editing.
-- **Image Support**: Accepts an optional image input for vision-language models.
-- **Reproducibility**: A `seed` parameter helps generate more consistent outputs.
-- **Robustness**: A `max_retries` parameter automatically re-attempts failed API calls.
-- **Clear Error Handling**: The node fails (turns red) if the final output contains "error", making debugging easy.
+- **OpenAI-Compatible Only**: Works with any OpenAI-style `/chat/completions` API.
+- **Model List Cache**: Fetch models from `/models` and cache by `base_url` with a quick refresh toggle.
+- **Multiline Prompts**: System and user prompts support multiline input.
+- **Image Support**: Optional image input for vision-language models.
+- **Retries + Fail Words**: Auto-retry and re-run if response contains any fail words.
+- **Result Cache**: Caches results by inputs (ignores seed) with optional forced rerun.
+- **Seed Controls**: Fixed seed or random seed on each run.
+- **Three Outputs**: `thinking`, `response`, and `raw_json`.
+- **Streaming via httpx**: Uses streaming to reduce long-timeout issues.
 
 ## Installation
 
@@ -25,85 +24,116 @@ This custom node for ComfyUI provides a single, powerful `LLM Chat` node for int
     ```
 2.  Clone this repository:
     ```bash
-    git clone https://github.com/Zeknes/ComfyUI-LLMChat.git
+    git clone https://github.com/PaddyDu/llm-chat.git
     ```
-3.  Restart ComfyUI. The required `requests` dependency will be installed automatically.
+3.  Install dependencies:
+    ```bash
+    pip install httpx numpy pillow
+    ```
+4.  Restart ComfyUI.
 
 ## Usage
 
 After installation, add the node to your workflow:
-- Right-click on the canvas -> Add Node -> LLMChat -> **LLM Chat**
+- Right-click on the canvas -> Add Node -> Utils -> AI -> **LLM Chat**
 
 ### Configuring the Node
 
-1.  **Select a Mode**:
-    - `OpenAI`: Use for services like OpenRouter, OpenAI, etc.
-    - `Ollama`: Use for your local Ollama models.
-    - `Smart`: Use OpenAI with an automatic fallback to Ollama on failure.
+1.  **Connection**:
+    - `base_url`: Your API endpoint, for example `https://api.openai.com/v1`.
+    - `api_key`: Your API key for the provider.
+    - `model`: Select from the cached model list.
 
-2.  **Fill in the Settings**: You only need to configure the settings for the mode(s) you are using.
-    - **For `OpenAI` or `Smart` mode**: Fill in `openai_base_url`, `api_key`, and `openai_model`.
-    - **For `Ollama` or `Smart` (as fallback)**: Fill in `ollama_base_url` and select a model from `ollama_model`.
+2.  **Model List**:
+    - `refresh_models`: Fetch and refresh the model list from `/models`.
 
-3.  **Set Common Parameters**:
-    - `seed`: An integer for controlling output randomness.
-    - `max_retries`: Number of times to retry a request before failing (or falling back in Smart mode).
-    - `system_prompt` & `user_prompt`: Provide the instructions and query for the model.
-    - `image` (Optional): Connect an image output from another node.
+3.  **Behavior**:
+    - `timeout`: Request timeout in seconds.
+    - `max_retries`: Retry count for network/API failures.
+    - `fail_words`: Comma-separated words that trigger a retry when found in the response.
+    - `always_rerun`: Bypass cache and force a fresh API call.
+    - `use_random_seed` + `seed`: Randomize or fix the seed value.
+    - `incognito`: Passes an `incognito` flag to providers that support it.
 
-The text output can be connected to any node that accepts a string, like a "Show Text" node.
+4.  **Prompts**:
+    - `system_prompt` and `user_prompt`: Multiline prompt inputs.
+    - `image` (Optional): Connect an image for vision models.
+
+Outputs:
+- `thinking`: Extracted from `<think>...</think>` when present.
+- `response`: Final text response.
+- `raw_json`: Raw API response.
+
+Notes:
+- Model caches are stored under `llm_chat_cache/` per `base_url`.
+- The last used `base_url` is remembered for convenience.
 
 ---
 
-# ComfyUI 统一 LLM 聊天节点
+# ComfyUI LLM 聊天节点
 
-这是一个为 ComfyUI 设计的自定义节点包，它提供了一个功能强大的 `LLM Chat` 节点，用于与多种大语言模型（LLM）进行交互，包括任何兼容 OpenAI 的 API 和本地部署的 Ollama。该节点支持可选的图像输入、重试逻辑和智能的回退模式。
+这是一个只面向 OpenAI 兼容 API 的 `LLM Chat` 自定义节点，支持模型列表缓存、可选图像输入、失败词重试以及固定或随机种子。
 
 ## 功能特性
 
-- **统一节点**: 只需一个节点即可管理与 OpenAI 和 Ollama 的连接。
-- **三种运行模式**:
-    - **OpenAI**: 连接到任何兼容 OpenAI 的 API (默认为 OpenRouter)。
-    - **Ollama**: 连接到您本地运行的 Ollama 实例。
-    - **Smart (智能模式)**: 首先尝试使用 OpenAI。如果在所有重试次数后仍然失败，它将自动回退到 Ollama，以确保您的工作流能够继续运行。
-- **多行输入**: 系统提示词和用户提示词输入框支持多行文本，便于编辑。
-- **图像支持**: 接受一个可选的图像输入，以支持视觉语言模型。
-- **可复现性**: 通过 `seed` (种子) 参数可以帮助生成更一致的输出结果。
-- **稳定性**: `max_retries` (最大重试次数) 参数会在 API 调用失败时自动重新尝试。
-- **清晰的错误处理**: 如果最终的输出文本中包含 "error" 关键字，节点将自动失败（变为红色），使调试变得简单。
+- **仅 OpenAI 兼容接口**: 适用于任意 OpenAI 风格的 `/chat/completions` 接口。
+- **模型列表缓存**: 通过 `/models` 获取模型列表并按 `base_url` 缓存。
+- **多行输入**: 系统提示词与用户提示词支持多行。
+- **图像支持**: 可选图像输入，适配视觉模型。
+- **重试 + 失败词过滤**: 出现失败词会自动重试。
+- **结果缓存**: 基于输入缓存结果（忽略种子），可强制每次重新调用。
+- **种子控制**: 支持固定或随机种子。
+- **三路输出**: `thinking`、`response`、`raw_json`。
+- **httpx 流式请求**: 降低长时间超时问题。
 
 ## 安装方法
 
-1.  进入您的 ComfyUI 安装目录下的 `custom_nodes` 文件夹：
+1.  进入 ComfyUI 的 `custom_nodes` 目录：
     ```bash
     cd ComfyUI/custom_nodes/
     ```
-2.  克隆此代码仓库：
+2.  克隆仓库：
     ```bash
-    git clone https://github.com/Zeknes/ComfyUI-LLMChat.git
+    git clone https://github.com/PaddyDu/llm-chat.git
     ```
-3.  重启 ComfyUI。所需的依赖库 `requests` 将在启动时自动安装。
+3.  安装依赖：
+    ```bash
+    pip install httpx numpy pillow
+    ```
+4.  重启 ComfyUI。
 
 ## 使用方法
 
-安装后，您可以在工作流中添加此节点：
-- 在画布上右键 -> Add Node -> LLMChat -> **LLM Chat**
+安装后添加节点：
+- 画布右键 -> Add Node -> Utils -> AI -> **LLM Chat**
 
 ### 配置节点
 
-1.  **选择模式 (Mode)**:
-    - `OpenAI`: 用于像 OpenRouter、OpenAI 等服务。
-    - `Ollama`: 用于您本地的 Ollama 模型。
-    - `Smart`: 使用 OpenAI，并在失败后自动回退到 Ollama。
+1.  **连接信息**:
+    - `base_url`: API 地址，例如 `https://api.openai.com/v1`。
+    - `api_key`: 你的 API Key。
+    - `model`: 从缓存的模型列表中选择。
 
-2.  **填写设置**: 您只需填写您所使用模式对应的设置。
-    - **对于 `OpenAI` 或 `Smart` 模式**: 填写 `openai_base_url`、`api_key` 和 `openai_model`。
-    - **对于 `Ollama` 或 `Smart` (作为备用)**: 填写 `ollama_base_url` 并从 `ollama_model` 下拉列表中选择一个模型。
+2.  **模型列表**:
+    - `refresh_models`: 从 `/models` 重新获取模型列表。
 
-3.  **设置通用参数**:
-    - `seed`: 用于控制输出随机性的整数。
-    - `max_retries`: 在请求失败（或在智能模式下回退）前重试的次数。
-    - `system_prompt` & `user_prompt`: 为模型提供行为指令和您的查询。
-    - `image` (可选): 从其他节点连接一个图像输出。
+3.  **行为设置**:
+    - `timeout`: 超时时间（秒）。
+    - `max_retries`: 失败重试次数。
+    - `fail_words`: 逗号分隔的失败词，命中即重试。
+    - `always_rerun`: 跳过缓存，强制重新调用。
+    - `use_random_seed` + `seed`: 随机或固定种子。
+    - `incognito`: 将 `incognito` 标记传递给支持该参数的服务端。
 
-节点的文本输出可以连接到任何接受字符串输入的节点，例如 "Show Text" 节点。
+4.  **提示词**:
+    - `system_prompt` 与 `user_prompt`: 支持多行。
+    - `image` (可选): 连接图像输入用于视觉模型。
+
+输出说明：
+- `thinking`: 若返回中包含 `<think>...</think>` 会提取到此输出。
+- `response`: 最终文本输出。
+- `raw_json`: 原始响应内容。
+
+备注：
+- 模型缓存保存在 `llm_chat_cache/`，按 `base_url` 分开。
+- 会记住上一次使用的 `base_url` 以便快速复用。
