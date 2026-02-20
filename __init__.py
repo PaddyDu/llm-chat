@@ -128,7 +128,6 @@ class LLMChatNode:
                 "api_key": ("STRING", {"default": ""}),
                 "model": (model_list, {"default": model_list[0]}),
                 "refresh_models": ("BOOLEAN", {"default": False}),
-                "incognito": ("BOOLEAN", {"default": False, "label_on": "Incognito ON", "label_off": "Incognito OFF"}),
                 "timeout": ("INT", {"default": 600, "min": 10, "max": 36000, "step": 10, "display": "number"}),
                 "always_rerun": ("BOOLEAN", {
                     "default": False,
@@ -159,7 +158,7 @@ class LLMChatNode:
         i = 255.0 * image.cpu().numpy().squeeze()
         return hashlib.md5(i.tobytes()).hexdigest()
     
-    def _generate_cache_key_ignore_seed(self, base_url, model, system_prompt, user_prompt, fail_words, image, incognito):
+    def _generate_cache_key_ignore_seed(self, base_url, model, system_prompt, user_prompt, fail_words, image):
         image_hash = self._image_hash(image)
         if isinstance(fail_words, dict):
             fail_words_str = str(fail_words.get("value", fail_words))
@@ -167,7 +166,7 @@ class LLMChatNode:
             fail_words_str = ""
         else:
             fail_words_str = str(fail_words)
-        cache_data = f"{base_url}|{model}|{system_prompt}|{user_prompt}|{fail_words_str}|{image_hash}|{incognito}"
+        cache_data = f"{base_url}|{model}|{system_prompt}|{user_prompt}|{fail_words_str}|{image_hash}"
         return hashlib.md5(cache_data.encode()).hexdigest()
     
     def _fetch_models_sync(self, base_url, api_key):
@@ -318,7 +317,6 @@ class LLMChatNode:
         api_key,
         model,
         refresh_models,
-        incognito,
         timeout,
         always_rerun,
         use_random_seed,
@@ -342,7 +340,7 @@ class LLMChatNode:
                 return ("", "Failed to fetch models. Please check your base_url and API Key.", "")
         
         cache_key = self._generate_cache_key_ignore_seed(
-            base_url, model, system_prompt, user_prompt, fail_words, image, incognito
+            base_url, model, system_prompt, user_prompt, fail_words, image
         )
         
         if (not always_rerun) and (cache_key in self._result_cache):
@@ -356,7 +354,7 @@ class LLMChatNode:
             actual_seed = seed
             seed_mode = "fixed"
         
-        print(f"[INFO] 🔄 FRESH API call | Model: {model} | Seed: {actual_seed} ({seed_mode}) | Incognito: {incognito}")
+        print(f"[INFO] 🔄 FRESH API call | Model: {model} | Seed: {actual_seed} ({seed_mode})")
         
         img_base64 = None
         if image is not None:
@@ -396,7 +394,6 @@ class LLMChatNode:
             "temperature": 0.7,
             "top_p": 1.0,
             "seed": actual_seed,
-            "incognito": incognito
         }
         
         raw_response = await self._call_openai_api_wrapper(url, headers, data, max_retries, fail_words, timeout)
