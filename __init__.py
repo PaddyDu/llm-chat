@@ -327,17 +327,21 @@ class LLMChatNode:
         user_prompt,
         image=None,
     ):
-        # 如果勾选了刷新模型，直接执行获取逻辑，不进行任何前置判断或执行后续逻辑
+        # 如果勾选了刷新模型：始终执行刷新请求，并通过抛异常弹窗提示后中断执行
         if refresh_models:
             print(f"[INFO] Refreshing model list for {base_url}...")
             remote_models = await asyncio.to_thread(self._fetch_models_sync, base_url, api_key)
+
             if remote_models:
                 self._save_model_cache(remote_models, base_url)
                 self._set_last_base_url(base_url)
-                print(f"[INFO] Saved {len(remote_models)} models to cache and updated last used URL.")
-                return ("", "Model list refreshed. Please reload the page or node to update the dropdown list.", "")
+                msg = f"Model list refreshed ({len(remote_models)} models). Please reload the page or node to update the dropdown list."
+                print(f"[INFO] {msg}")
+                raise Exception(msg)
             else:
-                return ("", "Failed to fetch models. Please check your base_url and API Key.", "")
+                msg = "Failed to fetch models. Please check your base_url and API Key."
+                print(f"[ERROR] {msg}")
+                raise Exception(msg)
         
         cache_key = self._generate_cache_key_ignore_seed(
             base_url, model, system_prompt, user_prompt, fail_words, image
